@@ -3,5 +3,5 @@ A system to automate building on MUCKs (and possibly similar systems; it would p
 
 It's also easy to use as a back-end for generating rooms programmatically. Just write a program that produces the appropriate data structure and dumps it to a `.yaml` file. One such program is included to demonstrate.
 
-Requires Python 3 and the `yaml` module (`pacman -S python-yaml` on Arch Linux, or etc.)
+Requires Python 3 and the `yaml` module (`pacman -S python-yaml` on Arch Linux, or etc [`pip install pyyaml` probably.])
 

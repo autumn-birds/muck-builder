@@ -1,0 +1,168 @@
+
+# This file is all the documentation we have. You can use it to create a set of commands that will,
+# theoretically, be usable for building an actual (if somewhat trivial) set of MUCK rooms.
+
+# The project's name determines how the rooms created are registered and how the files containing
+# build.py's output (in '-C' mode) are named.
+
+projectName: TestProject
+
+# Sometimes you might want some general commands -- to link the project to something outside what
+# the program generated, for instance.
+#
+# These will be tacked on to the end of build / remove operations UNLESS you are only building or
+# removing a specific subset of the project.
+
+POSTSCRIPT:
+    BUILD:
+        - 't home'
+        - 'Q'
+        - '@open [T]est Project;test;t=$autodig/TestProject/hub'
+    DESTROY:
+        - 't home'
+        - 'Q'
+        - '@recycle [T]est Project;test;t'
+
+# There are a few project-wide configuration options we can set.
+
+config:
+    'sge?': true
+    sge:
+        # Generic/default messages to set on exits.
+        #
+        # In these, !N equals the name of the room you're coming from / going to. You can set succ,
+        # osucc, drop, and odrop.
+        #
+        # The program provides defaults. And you can turn the feature off entirely by setting 'sge?'
+        # to false above.
+        drop: 'You find your way to !N...'
+
+rooms:
+
+    # Every room has to have a unique ID. This ID is used to refer to it everywhere. If you try to
+    # have two rooms with the same ID, one will probably over-write the other.
+
+    hub:
+        NAME: Outside Maze
+
+        # Properties ending in '#' are interpreted as lsedit lists.
+        #
+        # You can use '**' to add an extra newline: the > ... syntax doesn't give you two newlines in
+        # between paragraphs, so I added a workaround when dealing with the text they do give. This
+        # also works in ordinary properties -- it will be converted to {nl} afterwards like any
+        # other newline, as I recall.
+
+        desc#: >
+            You are outside a maze of little twisty passages, all different. Mist makes it very hard
+            to see here. **
+
+            Somewhere nearby, you can hear a soft whispering....
+
+        LINKS:
+            # This just specifies the name of the exit, not setting any exit messages on it. You can
+            # be more complex -- see below...
+            maze1: '[In]to the maze;into maze;maze;in'
+
+        POSTSCRIPT:
+            # Commands here will be run after teleporting into the room, after everything is built.
+            BUILD:
+                - '@recycle out'       # Remove the global exit from this room (see below)
+
+    maze1:
+        desc#: >
+            You are in a twisty little maze of passages, all different.
+
+        LINKS:
+            maze2:
+                NAME: '[N]orth;north;n'
+                
+                # The properties 'succ', 'osucc', 'drop', and 'odrop' are treated specially by the
+                # program, and turned into their respective commands, when set on exits. If you want
+                # to, you can also use the properties the MUCK itself uses: _/sc, _/osc, _/dr and
+                # _/odr.
+                #
+                # However, people will probably find these names less confusing.
+                
+                osucc: heads north.
+                succ: You walk north.
+                odrop: arrives from the east.
+                
+                # Notice that you can set ordinary properties just as well on exits.
+                
+                _/de: 'A narrow, slimy way, barely big enough to squeeze through, leads north.'
+
+            # Just as with rooms, you can't really have two of the same key in a dictionary, which
+            # is what is being produced here. I happened to run into this when wishing to make two
+            # exits to the same room. So there is a convention: underscores are removed from the
+            # names of rooms being used to make exits; this allows you to have unique dictionary
+            # keys specifying multiple exits that point to the same room.
+            #
+            # This is, perhaps, probably not something you'd want to do often, if ever, in actual
+            # use. I don't know.
+
+            maze2_:
+                NAME: '[S]outh;south;s'
+                osucc: You leave for the south.
+                succ: walks south.
+                odrop: arrives from the west.
+
+            maze3:
+                NAME: '[U]p;up;u'
+                succ: You start climbing up the steep, narrow walls...
+                osucc: scrabbles up the steep, narrow walls.
+                drop: ...and finally emerge...
+                odrop: emerges from somewhere Beneath.
+
+    maze2:
+        desc#: >
+            You are in a little maze of twisty passages, all similar.
+
+        LINKS:
+            maze1:
+                NAME: '[W]est;west;w'
+
+    maze3:
+        # It's possible to override properties set in ALL. For demonstration, this room uses a
+        # non-list @desc.
+        _/de: 'You are in a maze of twisty little passages, all alike.'
+
+        LINKS:
+            maze2:
+                NAME: '[T]hrough;through;t'
+                osucc: 'walks through the wall!'
+                odrop: 'wanders in from another part of the maze.'
+
+    ALL:
+        # Options / properties / instructions set on 'ALL' are applied to EVERY room, as if they had
+        # been set on the room itself. This means you can have exits, POSTSCRIPT, etc., for every
+        # room. Even specify a default name.
+
+        NAME: Maze
+
+        # This is what @desc actually sets!
+        _/de: '{list:desc}'
+
+        POSTSCRIPT:
+            # This will be ran in every room AFTER all the rooms and exits are built.
+            #
+            # Note that if you actually set exit messages here you would clobber the exit messages
+            # you'd already specified, which you probably don't want. I'm not actually sure if
+            # running 'sge' will replace extant messages, but I would assume it doesn't. (My test
+            # server didn't have 'sge'.)
+            BUILD:
+                - '@set here=D'        # For demonstration purposes.
+
+        # We can actually do anything you could do to a room here: it's the precise same mechanism,
+        # just applied to every room rather than just one...
+        LINKS:
+            hub:
+                NAME: '[O]ut;out;o'
+
+                # ... and this seems pretty neat, but unfortunately the exit will also be added to the hub.
+                # However, we can put commands into the hub to remove it, I suppose.
+
+                _/de: 'The only way out is almost too narrow to pass through.'
+
+                # Someday a facility for applying things only to a particular set of rooms (for
+                # instance, by filtering NAME: or something) might be useful. However this sort of
+                # thing will also make things endlessly more complex.
